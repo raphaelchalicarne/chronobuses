@@ -2,7 +2,13 @@ function getRandomInt(max) {
   return Math.floor(Math.random() * max);
 }
 
-function displayLyonRoutes() {
+function searchStop(event) {
+  let stop_search = document.getElementById("search_stop").value;
+  event.preventDefault();
+  displayStopRoutes(stop_search);
+}
+
+function displayStopRoutes(stop_search) {
   fetch("./data/stops.json")
     .then((res) => {
       if (!res.ok) {
@@ -12,10 +18,11 @@ function displayLyonRoutes() {
       return res.json();
     })
     .then((data) => {
-      let lyon_trips = data["stops_association"]
-        .find((stop) => stop["stop_id"] == "dcc0aca2-9603-11e6-9066-549f350fcb0c")["trip_ids"]
-        .split(",");
-      return lyon_trips.forEach(trip_id => displayTrip(trip_id))
+      let stop = data["stops_association"]
+        .find((stop) => stop["stop_name"].startsWith(stop_search));
+      console.log(stop);
+      let trips = stop["trip_ids"].split(",");
+      return trips.forEach(trip_id => displayTrip(trip_id))
     }
     )
     .catch((error) =>
@@ -43,7 +50,8 @@ function displayTrip(trip_id) {
 }
 
 var map = L.map('map').setView([45.7578137, 4.8320114], 5);
-displayLyonRoutes();
+const search_bar = document.getElementById("search_bar");
+search_bar.addEventListener("submit", searchStop);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
