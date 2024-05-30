@@ -1,5 +1,8 @@
-var map = L.map('map').setView([45.7578137, 4.8320114], 6);
+var map = L.map('map').setView([45.7578137, 4.8320114], 5);
 
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max);
+}
 
 function fetchJSONData() {
   fetch("./data/trips.json")
@@ -11,8 +14,7 @@ function fetchJSONData() {
       return res.json();
     })
     .then((data) =>
-      // console.log(data)
-      L.polyline(data["shape"], { color: '#73D700' }).addTo(map)
+      L.polyline(data["route_trips"][getRandomInt(1111)]["shape"], { color: '#73D700' }).addTo(map)
     )
     .catch((error) =>
       console.error("Unable to fetch data:", error));
