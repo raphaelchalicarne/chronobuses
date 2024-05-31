@@ -22,10 +22,6 @@ function populateStopsDatalist() {
       console.error("Unable to fetch data:", error));
 }
 
-function getRandomInt(max) {
-  return Math.floor(Math.random() * max);
-}
-
 function searchStop(event) {
   let stop_search = document.getElementById("search_stop").value;
   event.preventDefault();
@@ -42,12 +38,13 @@ function displayStopRoutes(stop_search) {
       return res.json();
     })
     .then((data) => {
+      network.clearLayers();
       let stop = data["stops_association"]
         .find((stop) => stop["stop_name"] == stop_search);
       displayStop(stop);
-      console.log(stop);
       let trip_ids = stop["trip_ids"].split(",");
-      return displayTrips(trip_ids);
+      displayTrips(trip_ids);
+      displayConnectedStops(trip_ids);
     }
     )
     .catch((error) =>
@@ -71,7 +68,28 @@ function displayTrips(trip_ids) {
       L.polyline(
         shapes,
         { color: '#73D700' }
-      ).addTo(map)
+      ).addTo(network);
+    }
+    )
+    .catch((error) =>
+      console.error("Unable to fetch data:", error));
+}
+
+function displayConnectedStops(trip_ids) {
+  fetch("./data/trips.json")
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error
+          (`HTTP error! Status: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((data) => {
+      let trips = data["route_trips"]
+        .filter((trip_data) => trip_ids.includes(trip_data["trip_id"]));
+      let all_stop_ids = trips.map((trip_data) => trip_data["sorted_stops"]).join(',').split(',');
+      let unique_stop_ids = Array.from(new Set(all_stop_ids));
+      displayStops(unique_stop_ids);
     }
     )
     .catch((error) =>
@@ -100,16 +118,45 @@ function displayTrip(trip_id) {
 
 function displayStop(stop_data) {
   L.marker([stop_data["stop_lat"], stop_data["stop_lon"]])
-    .addTo(map)
-    .bindTooltip(stop_data["stop_name"]);
+    .addTo(network)
+    .bindTooltip(stop_data["stop_name"])
+    .on('click', onMarkerClick);
+}
+
+function displayStops(stop_ids) {
+  fetch("./data/stops.json")
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error
+          (`HTTP error! Status: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((data) => {
+      let stops = data["stops_association"]
+        .filter((stop_data) => stop_ids.includes(stop_data["stop_id"]));
+      stops.forEach((stop_data) => displayStop(stop_data));
+    }
+    )
+    .catch((error) =>
+      console.error("Unable to fetch data:", error));
+}
+
+function onMarkerClick(e) {
+  var stop_name = e.target.getTooltip().getContent();
+  displayStopRoutes(stop_name);
 }
 
 populateStopsDatalist();
 var map = L.map('map').setView([45.7578137, 4.8320114], 5);
+
 const search_bar = document.getElementById("search_bar");
 search_bar.addEventListener("submit", searchStop);
 
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+var network = new L.layerGroup();
+network.addTo(map);
+
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
   maxZoom: 19,
-  attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  attribution: '<a href="https://carto.com/">&copy; CARTO</a> <a href="http://openmaptiles.org/">&copy; OpenMapTiles</a> <a href="http://www.openstreetmap.org/copyright">&copy; OpenStreetMap contributors</a>'
 }).addTo(map);
