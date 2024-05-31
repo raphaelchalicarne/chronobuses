@@ -20,6 +20,7 @@ function displayStopRoutes(stop_search) {
     .then((data) => {
       let stop = data["stops_association"]
         .find((stop) => stop["stop_name"].startsWith(stop_search));
+      displayStop(stop);
       console.log(stop);
       let trip_ids = stop["trip_ids"].split(",");
       return displayTrips(trip_ids);
@@ -71,6 +72,10 @@ function displayTrip(trip_id) {
     )
     .catch((error) =>
       console.error("Unable to fetch data:", error));
+}
+
+function displayStop(stop_data) {
+  L.marker([stop_data["stop_lat"], stop_data["stop_lon"]]).addTo(map);
 }
 
 var map = L.map('map').setView([45.7578137, 4.8320114], 5);
