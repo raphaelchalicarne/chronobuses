@@ -22,14 +22,9 @@ function populateStopsDatalist() {
       console.error("Unable to fetch data:", error));
 }
 
-function getRandomInt(max) {
-  return Math.floor(Math.random() * max);
-}
-
 function searchStop(event) {
   let stop_search = document.getElementById("search_stop").value;
   event.preventDefault();
-  network.clearLayers();
   displayStopRoutes(stop_search);
 }
 
@@ -43,10 +38,10 @@ function displayStopRoutes(stop_search) {
       return res.json();
     })
     .then((data) => {
+      network.clearLayers();
       let stop = data["stops_association"]
         .find((stop) => stop["stop_name"] == stop_search);
       displayStop(stop);
-      console.log(stop);
       let trip_ids = stop["trip_ids"].split(",");
       displayTrips(trip_ids);
       displayConnectedStops(trip_ids);
@@ -124,7 +119,8 @@ function displayTrip(trip_id) {
 function displayStop(stop_data) {
   L.marker([stop_data["stop_lat"], stop_data["stop_lon"]])
     .addTo(network)
-    .bindTooltip(stop_data["stop_name"]);
+    .bindTooltip(stop_data["stop_name"])
+    .on('click', onMarkerClick);
 }
 
 function displayStops(stop_ids) {
@@ -139,12 +135,16 @@ function displayStops(stop_ids) {
     .then((data) => {
       let stops = data["stops_association"]
         .filter((stop_data) => stop_ids.includes(stop_data["stop_id"]));
-      // console.log(stops);
       stops.forEach((stop_data) => displayStop(stop_data));
     }
     )
     .catch((error) =>
       console.error("Unable to fetch data:", error));
+}
+
+function onMarkerClick(e) {
+  var stop_name = e.target.getTooltip().getContent();
+  displayStopRoutes(stop_name);
 }
 
 populateStopsDatalist();
