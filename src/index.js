@@ -1,8 +1,4 @@
-function getRandomInt(max) {
-  return Math.floor(Math.random() * max);
-}
-
-function displayLyonRoutes() {
+function populateStopsDatalist() {
   fetch("./data/stops.json")
     .then((res) => {
       if (!res.ok) {
@@ -12,10 +8,70 @@ function displayLyonRoutes() {
       return res.json();
     })
     .then((data) => {
-      let lyon_trips = data["stops_association"]
-        .find((stop) => stop["stop_id"] == "dcc0aca2-9603-11e6-9066-549f350fcb0c")["trip_ids"]
-        .split(",");
-      return lyon_trips.forEach(trip_id => displayTrip(trip_id))
+      var stops_datalist = document.getElementById("stops");
+      let stops = data["stops_association"];
+      stops.forEach(stop_data => {
+        let option = document.createElement('option');
+        option.id = stop_data["stop_id"];
+        option.value = stop_data["stop_name"];
+        option.label = stop_data["stop_name"];
+        stops_datalist.appendChild(option);
+      });
+    })
+    .catch((error) =>
+      console.error("Unable to fetch data:", error));
+}
+
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max);
+}
+
+function searchStop(event) {
+  let stop_search = document.getElementById("search_stop").value;
+  event.preventDefault();
+  displayStopRoutes(stop_search);
+}
+
+function displayStopRoutes(stop_search) {
+  fetch("./data/stops.json")
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error
+          (`HTTP error! Status: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((data) => {
+      let stop = data["stops_association"]
+        .find((stop) => stop["stop_name"] == stop_search);
+      displayStop(stop);
+      console.log(stop);
+      let trip_ids = stop["trip_ids"].split(",");
+      return displayTrips(trip_ids);
+    }
+    )
+    .catch((error) =>
+      console.error("Unable to fetch data:", error));
+}
+
+function displayTrips(trip_ids) {
+  fetch("./data/trips.json")
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error
+          (`HTTP error! Status: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((data) => {
+      let shapes = trip_ids.map(
+        (trip_id) => data["route_trips"]
+          .find((trip) => trip["trip_id"] == trip_id)["shape"]
+      );
+      L.polyline(
+        shapes,
+        { color: '#73D700' }
+      ).addTo(map)
     }
     )
     .catch((error) =>
@@ -42,8 +98,16 @@ function displayTrip(trip_id) {
       console.error("Unable to fetch data:", error));
 }
 
+function displayStop(stop_data) {
+  L.marker([stop_data["stop_lat"], stop_data["stop_lon"]])
+    .addTo(map)
+    .bindTooltip(stop_data["stop_name"]);
+}
+
+populateStopsDatalist();
 var map = L.map('map').setView([45.7578137, 4.8320114], 5);
-displayLyonRoutes();
+const search_bar = document.getElementById("search_bar");
+search_bar.addEventListener("submit", searchStop);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
