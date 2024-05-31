@@ -48,7 +48,8 @@ function displayStopRoutes(stop_search) {
       displayStop(stop);
       console.log(stop);
       let trip_ids = stop["trip_ids"].split(",");
-      return displayTrips(trip_ids);
+      displayTrips(trip_ids);
+      displayConnectedStops(trip_ids);
     }
     )
     .catch((error) =>
@@ -79,6 +80,27 @@ function displayTrips(trip_ids) {
       console.error("Unable to fetch data:", error));
 }
 
+function displayConnectedStops(trip_ids) {
+  fetch("./data/trips.json")
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error
+          (`HTTP error! Status: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((data) => {
+      let trips = data["route_trips"]
+        .filter((trip_data) => trip_ids.includes(trip_data["trip_id"]));
+      let all_stop_ids = trips.map((trip_data) => trip_data["sorted_stops"]).join(',').split(',');
+      let unique_stop_ids = Array.from(new Set(all_stop_ids));
+      displayStops(unique_stop_ids);
+    }
+    )
+    .catch((error) =>
+      console.error("Unable to fetch data:", error));
+}
+
 function displayTrip(trip_id) {
   fetch("./data/trips.json")
     .then((res) => {
@@ -103,6 +125,26 @@ function displayStop(stop_data) {
   L.marker([stop_data["stop_lat"], stop_data["stop_lon"]])
     .addTo(network)
     .bindTooltip(stop_data["stop_name"]);
+}
+
+function displayStops(stop_ids) {
+  fetch("./data/stops.json")
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error
+          (`HTTP error! Status: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((data) => {
+      let stops = data["stops_association"]
+        .filter((stop_data) => stop_ids.includes(stop_data["stop_id"]));
+      // console.log(stops);
+      stops.forEach((stop_data) => displayStop(stop_data));
+    }
+    )
+    .catch((error) =>
+      console.error("Unable to fetch data:", error));
 }
 
 populateStopsDatalist();
