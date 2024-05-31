@@ -23,7 +23,9 @@
 
 <body>
   <form id="search_bar">
-    <label>Search a stop : <input id="search_stop" type="text" /></label>
+    <label for="search_stop">Search a stop :</label>
+    <input id="search_stop" type="text" list="stops" />
+    <datalist id="stops"></datalist>
     <button type="submit">Search</button>
   </form>
   <div id='map'></div>

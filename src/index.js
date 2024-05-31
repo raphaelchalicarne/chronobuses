@@ -1,3 +1,27 @@
+function populateStopsDatalist() {
+  fetch("./data/stops.json")
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error
+          (`HTTP error! Status: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((data) => {
+      var stops_datalist = document.getElementById("stops");
+      let stops = data["stops_association"];
+      stops.forEach(stop_data => {
+        let option = document.createElement('option');
+        option.id = stop_data["stop_id"];
+        option.value = stop_data["stop_name"];
+        option.label = stop_data["stop_name"];
+        stops_datalist.appendChild(option);
+      });
+    })
+    .catch((error) =>
+      console.error("Unable to fetch data:", error));
+}
+
 function getRandomInt(max) {
   return Math.floor(Math.random() * max);
 }
@@ -19,7 +43,7 @@ function displayStopRoutes(stop_search) {
     })
     .then((data) => {
       let stop = data["stops_association"]
-        .find((stop) => stop["stop_name"].startsWith(stop_search));
+        .find((stop) => stop["stop_name"] == stop_search);
       displayStop(stop);
       console.log(stop);
       let trip_ids = stop["trip_ids"].split(",");
@@ -75,9 +99,12 @@ function displayTrip(trip_id) {
 }
 
 function displayStop(stop_data) {
-  L.marker([stop_data["stop_lat"], stop_data["stop_lon"]]).addTo(map);
+  L.marker([stop_data["stop_lat"], stop_data["stop_lon"]])
+    .addTo(map)
+    .bindTooltip(stop_data["stop_name"]);
 }
 
+populateStopsDatalist();
 var map = L.map('map').setView([45.7578137, 4.8320114], 5);
 const search_bar = document.getElementById("search_bar");
 search_bar.addEventListener("submit", searchStop);
