@@ -29,6 +29,7 @@ function getRandomInt(max) {
 function searchStop(event) {
   let stop_search = document.getElementById("search_stop").value;
   event.preventDefault();
+  network.clearLayers();
   displayStopRoutes(stop_search);
 }
 
@@ -71,7 +72,7 @@ function displayTrips(trip_ids) {
       L.polyline(
         shapes,
         { color: '#73D700' }
-      ).addTo(map)
+      ).addTo(network);
     }
     )
     .catch((error) =>
@@ -100,16 +101,20 @@ function displayTrip(trip_id) {
 
 function displayStop(stop_data) {
   L.marker([stop_data["stop_lat"], stop_data["stop_lon"]])
-    .addTo(map)
+    .addTo(network)
     .bindTooltip(stop_data["stop_name"]);
 }
 
 populateStopsDatalist();
 var map = L.map('map').setView([45.7578137, 4.8320114], 5);
+
 const search_bar = document.getElementById("search_bar");
 search_bar.addEventListener("submit", searchStop);
 
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+var network = new L.layerGroup();
+network.addTo(map);
+
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
   maxZoom: 19,
-  attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  attribution: '<a href="https://carto.com/">&copy; CARTO</a> <a href="http://openmaptiles.org/">&copy; OpenMapTiles</a> <a href="http://www.openstreetmap.org/copyright">&copy; OpenStreetMap contributors</a>'
 }).addTo(map);
