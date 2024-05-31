@@ -21,8 +21,32 @@ function displayStopRoutes(stop_search) {
       let stop = data["stops_association"]
         .find((stop) => stop["stop_name"].startsWith(stop_search));
       console.log(stop);
-      let trips = stop["trip_ids"].split(",");
-      return trips.forEach(trip_id => displayTrip(trip_id))
+      let trip_ids = stop["trip_ids"].split(",");
+      return displayTrips(trip_ids);
+    }
+    )
+    .catch((error) =>
+      console.error("Unable to fetch data:", error));
+}
+
+function displayTrips(trip_ids) {
+  fetch("./data/trips.json")
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error
+          (`HTTP error! Status: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((data) => {
+      let shapes = trip_ids.map(
+        (trip_id) => data["route_trips"]
+          .find((trip) => trip["trip_id"] == trip_id)["shape"]
+      );
+      L.polyline(
+        shapes,
+        { color: '#73D700' }
+      ).addTo(map)
     }
     )
     .catch((error) =>
