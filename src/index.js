@@ -25,7 +25,8 @@ function populateStopsDatalist() {
 function searchStop(event) {
   let stop_search = document.getElementById("search_stop").value;
   event.preventDefault();
-  displayStopRoutes(stop_search);
+  displayStopRoutes(stop_search)
+  document.getElementById("search_stop").value = "";
 }
 
 function displayStopRoutes(stop_search) {
