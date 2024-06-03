@@ -67,7 +67,6 @@ function displayTrips(trip_ids) {
             .find((trip) => trip["trip_id"] == trip_id)["shape"]
         )
         .filter(x => x);
-      console.log(shapes);
       L.polyline(
         shapes,
         { color: '#73D700' }
