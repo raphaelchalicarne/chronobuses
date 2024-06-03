@@ -8,14 +8,15 @@ function populateStopsDatalist() {
       return res.json();
     })
     .then((data) => {
-      var stops_datalist = document.getElementById("stops");
-      let stops = data["stops_association"];
+      var stops_select = document.getElementById("search_stop");
+      let stops = data["stops_association"].sort((a, b) => a["stop_name"].localeCompare(b["stop_name"]));
+      console.log(stops.slice(0, 5));
       stops.forEach(stop_data => {
         let option = document.createElement('option');
         option.id = stop_data["stop_id"];
         option.value = stop_data["stop_name"];
         option.label = stop_data["stop_name"];
-        stops_datalist.appendChild(option);
+        stops_select.appendChild(option);
       });
     })
     .catch((error) =>
@@ -23,10 +24,11 @@ function populateStopsDatalist() {
 }
 
 function searchStop(event) {
-  let stop_search = document.getElementById("search_stop").value;
+  let stop_search = document.getElementById("search_stop");
+  let selected_stop = stop_search.options[stop_search.selectedIndex];
+  displayStopRoutes(selected_stop.value)
   event.preventDefault();
-  displayStopRoutes(stop_search)
-  document.getElementById("search_stop").value = "";
+  stop_search.selectedIndex = -1;
 }
 
 function displayStopRoutes(stop_search) {
@@ -154,7 +156,7 @@ populateStopsDatalist();
 var map = L.map('map').setView([45.7578137, 4.8320114], 5);
 
 const search_bar = document.getElementById("search_bar");
-search_bar.addEventListener("submit", searchStop);
+search_bar.addEventListener("change", searchStop);
 
 var network = new L.layerGroup();
 network.addTo(map);

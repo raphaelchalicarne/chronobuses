@@ -26,11 +26,11 @@
 </head>
 
 <body>
-  <form id="search_bar">
-    <label for="search_stop">Search a stop :</label>
-    <input id="search_stop" type="text" list="stops" />
-    <datalist id="stops"></datalist>
-    <button type="submit">Search</button>
+  <form id="search_bar" class="row row-cols-lg-auto align-items-center">
+    <div class="col-12">
+      <label class="form-label" for="search_stop">Search a stop :</label>
+      <select class="form-select" id="search_stop" name="Paris (Bercy Seine)"></select>
+    </div>
   </form>
   <div id='map'></div>
   <script src="src/index.js"></script>
