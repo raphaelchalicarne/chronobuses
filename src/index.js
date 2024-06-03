@@ -10,7 +10,6 @@ function populateStopsDatalist() {
     .then((data) => {
       var stops_select = document.getElementById("search_stop");
       let stops = data["stops_association"].sort((a, b) => a["stop_name"].localeCompare(b["stop_name"]));
-      console.log(stops.slice(0, 5));
       stops.forEach(stop_data => {
         let option = document.createElement('option');
         option.id = stop_data["stop_id"];
