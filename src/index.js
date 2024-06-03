@@ -61,10 +61,13 @@ function displayTrips(trip_ids) {
       return res.json();
     })
     .then((data) => {
-      let shapes = trip_ids.map(
-        (trip_id) => data["route_trips"]
-          .find((trip) => trip["trip_id"] == trip_id)["shape"]
-      );
+      let shapes = trip_ids
+        .map(
+          (trip_id) => data["route_trips"]
+            .find((trip) => trip["trip_id"] == trip_id)["shape"]
+        )
+        .filter(x => x);
+      console.log(shapes);
       L.polyline(
         shapes,
         { color: '#73D700' }
