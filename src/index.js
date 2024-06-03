@@ -44,6 +44,7 @@ function displayStopRoutes(stop_search) {
       let stop = data["stops_association"]
         .find((stop) => stop["stop_name"] == stop_search);
       displayStop(stop);
+      map.setView([stop["stop_lat"], stop["stop_lon"]], 5);
       let trip_ids = stop["trip_ids"].split(",");
       displayTrips(trip_ids);
       displayConnectedStops(trip_ids);
