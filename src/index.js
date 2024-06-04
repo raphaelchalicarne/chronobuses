@@ -25,16 +25,16 @@ function jsonPayload(response) {
 
 function populateStopsDatalist() {
   fetchStops().then((data) => {
-      var stops_select = document.getElementById("search_stop");
-      let stops = data["stops_association"].sort((a, b) => a["stop_name"].localeCompare(b["stop_name"]));
-      stops.forEach(stop_data => {
-        let option = document.createElement('option');
-        option.id = stop_data["stop_id"];
-        option.value = stop_data["stop_name"];
-        option.label = stop_data["stop_name"];
-        stops_select.appendChild(option);
-      });
+    var stops_select = document.getElementById("search_stop");
+    let stops = data["stops_association"].sort((a, b) => a["stop_name"].localeCompare(b["stop_name"]));
+    stops.forEach(stop_data => {
+      let option = document.createElement('option');
+      option.id = stop_data["stop_id"];
+      option.value = stop_data["stop_name"];
+      option.label = stop_data["stop_name"];
+      stops_select.appendChild(option);
     });
+  });
 }
 
 function searchStop(event) {
