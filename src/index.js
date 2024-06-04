@@ -1,25 +1,3 @@
-function populateStopsDatalist() {
-  fetchStops().then((data) => {
-      var stops_select = document.getElementById("search_stop");
-      let stops = data["stops_association"].sort((a, b) => a["stop_name"].localeCompare(b["stop_name"]));
-      stops.forEach(stop_data => {
-        let option = document.createElement('option');
-        option.id = stop_data["stop_id"];
-        option.value = stop_data["stop_name"];
-        option.label = stop_data["stop_name"];
-        stops_select.appendChild(option);
-      });
-    });
-}
-
-function searchStop(event) {
-  let stop_search = document.getElementById("search_stop");
-  let selected_stop = stop_search.options[stop_search.selectedIndex];
-  fetchStops().then(stops_data => displayStopRoutes(stops_data, selected_stop.value));
-  event.preventDefault();
-  stop_search.selectedIndex = -1;
-}
-
 async function fetchStops() {
   try {
     const res = await fetch("./data/stops.json");
@@ -43,6 +21,28 @@ function jsonPayload(response) {
     throw new Error(`HTTP error! Status: ${response.status}`);
   }
   return response.json();
+}
+
+function populateStopsDatalist() {
+  fetchStops().then((data) => {
+      var stops_select = document.getElementById("search_stop");
+      let stops = data["stops_association"].sort((a, b) => a["stop_name"].localeCompare(b["stop_name"]));
+      stops.forEach(stop_data => {
+        let option = document.createElement('option');
+        option.id = stop_data["stop_id"];
+        option.value = stop_data["stop_name"];
+        option.label = stop_data["stop_name"];
+        stops_select.appendChild(option);
+      });
+    });
+}
+
+function searchStop(event) {
+  let stop_search = document.getElementById("search_stop");
+  let selected_stop = stop_search.options[stop_search.selectedIndex];
+  fetchStops().then(stops_data => displayStopRoutes(stops_data, selected_stop.value));
+  event.preventDefault();
+  stop_search.selectedIndex = -1;
 }
 
 async function displayStopRoutes(stops_data, stop_search) {
