@@ -25,80 +25,65 @@ function populateStopsDatalist() {
 function searchStop(event) {
   let stop_search = document.getElementById("search_stop");
   let selected_stop = stop_search.options[stop_search.selectedIndex];
-  displayStopRoutes(selected_stop.value)
+  fetchStops().then(stops => displayStopRoutes(stops, selected_stop.value));
   event.preventDefault();
   stop_search.selectedIndex = -1;
 }
 
-function displayStopRoutes(stop_search) {
-  fetch("./data/stops.json")
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error
-          (`HTTP error! Status: ${res.status}`);
-      }
-      return res.json();
-    })
-    .then((data) => {
-      network.clearLayers();
-      let stop = data["stops_association"]
-        .find((stop) => stop["stop_name"] == stop_search);
-      displayStop(stop);
-      map.setView([stop["stop_lat"], stop["stop_lon"]], 5);
-      let trip_ids = stop["trip_ids"].split(",");
-      displayTrips(trip_ids);
-      displayConnectedStops(trip_ids);
-    }
-    )
-    .catch((error) =>
-      console.error("Unable to fetch data:", error));
+async function fetchStops() {
+  try {
+    const res = await fetch("./data/stops.json");
+    return jsonPayload(res);
+  } catch (error) {
+    return console.error("Unable to fetch data:", error);
+  }
 }
 
-function displayTrips(trip_ids) {
-  fetch("./data/trips.json")
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error
-          (`HTTP error! Status: ${res.status}`);
-      }
-      return res.json();
-    })
-    .then((data) => {
-      let shapes = trip_ids
-        .map(
-          (trip_id) => data["route_trips"]
-            .find((trip) => trip["trip_id"] == trip_id)["shape"]
-        )
-        .filter(x => x);
-      L.polyline(
-        shapes,
-        { color: '#73D700' }
-      ).addTo(network);
-    }
-    )
-    .catch((error) =>
-      console.error("Unable to fetch data:", error));
+async function fetchTrips() {
+  try {
+    const res = await fetch("./data/trips.json");
+    return jsonPayload(res);
+  } catch (error) {
+    return console.error("Unable to fetch data:", error);
+  }
 }
 
-function displayConnectedStops(trip_ids) {
-  fetch("./data/trips.json")
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error
-          (`HTTP error! Status: ${res.status}`);
-      }
-      return res.json();
-    })
-    .then((data) => {
-      let trips = data["route_trips"]
-        .filter((trip_data) => trip_ids.includes(trip_data["trip_id"]));
-      let all_stop_ids = trips.map((trip_data) => trip_data["sorted_stops"]).join(',').split(',');
-      let unique_stop_ids = Array.from(new Set(all_stop_ids));
-      displayStops(unique_stop_ids);
-    }
+function jsonPayload(response) {
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+  return response.json();
+}
+
+async function displayStopRoutes(stops, stop_search) {
+  network.clearLayers();
+  let stop = stops["stops_association"].find((stop) => stop["stop_name"] == stop_search);
+  displayStop(stop);
+  map.setView([stop["stop_lat"], stop["stop_lon"]], 5);
+  let trip_ids = stop["trip_ids"].split(",");
+  fetchTrips().then((trips_data) => displayTrips(trips_data, trip_ids));
+  fetchTrips().then((trips_data) => displayConnectedStops(trips_data, trip_ids));
+}
+
+async function displayTrips(trips_data, trip_ids) {
+  let shapes = trip_ids
+    .map(
+      (trip_id) => trips_data["route_trips"]
+        .find((trip) => trip["trip_id"] == trip_id)["shape"]
     )
-    .catch((error) =>
-      console.error("Unable to fetch data:", error));
+    .filter(x => x);
+  L.polyline(
+    shapes,
+    { color: '#73D700' }
+  ).addTo(network);
+}
+
+async function displayConnectedStops(trips_data, trip_ids) {
+  let trips = trips_data["route_trips"]
+    .filter((trip_data) => trip_ids.includes(trip_data["trip_id"]));
+  let all_stop_ids = trips.map((trip_data) => trip_data["sorted_stops"]).join(',').split(',');
+  let unique_stop_ids = Array.from(new Set(all_stop_ids));
+  displayStops(unique_stop_ids);
 }
 
 function displayTrip(trip_id) {
