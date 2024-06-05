@@ -24,14 +24,15 @@ function jsonPayload(response) {
 }
 
 function populateStopsDatalist() {
-  fetchStops().then((data) => {
+  fetchStops().then((stops_data) => {
     var stops_select = document.getElementById("search_stop");
-    let stops = data["stops_association"].sort((a, b) => a["stop_name"].localeCompare(b["stop_name"]));
-    stops.forEach(stop_data => {
+    let stops = stops_data["stops_association"]
+      .sort((a, b) => a["stop_name"].localeCompare(b["stop_name"]));
+    stops.forEach(stop => {
       let option = document.createElement('option');
-      option.id = stop_data["stop_id"];
-      option.value = stop_data["stop_name"];
-      option.label = stop_data["stop_name"];
+      option.id = stop["stop_id"];
+      option.value = stop["stop_name"];
+      option.label = stop["stop_name"];
       stops_select.appendChild(option);
     });
   });
@@ -45,7 +46,7 @@ function searchStop(event) {
   stop_search.selectedIndex = -1;
 }
 
-async function displayStopRoutes(stops_data, stop_search) {
+function displayStopRoutes(stops_data, stop_search) {
   network.clearLayers();
   let stop = stops_data["stops_association"].find((stop) => stop["stop_name"] == stop_search);
   displayStop(stop);
@@ -55,7 +56,7 @@ async function displayStopRoutes(stops_data, stop_search) {
   fetchTrips().then((trips_data) => displayConnectedStops(trips_data, trip_ids));
 }
 
-async function displayTrips(trips_data, trip_ids) {
+function displayTrips(trips_data, trip_ids) {
   let shapes = trip_ids
     .map(
       (trip_id) => trips_data["route_trips"]
@@ -68,45 +69,25 @@ async function displayTrips(trips_data, trip_ids) {
   ).addTo(network);
 }
 
-async function displayConnectedStops(trips_data, trip_ids) {
+function displayConnectedStops(trips_data, trip_ids) {
   let trips = trips_data["route_trips"]
     .filter((trip_data) => trip_ids.includes(trip_data["trip_id"]));
   let all_stop_ids = trips.map((trip_data) => trip_data["sorted_stops"]).join(',').split(',');
   let unique_stop_ids = Array.from(new Set(all_stop_ids));
-  fetchStops().then(stops => displayStops(stops, unique_stop_ids));
-}
-
-function displayTrip(trip_id) {
-  fetch("./data/trips.json")
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error
-          (`HTTP error! Status: ${res.status}`);
-      }
-      return res.json();
-    })
-    .then((data) => {
-      L.polyline(
-        data["route_trips"].find((trip) => trip["trip_id"] == trip_id)["shape"],
-        { color: '#73D700' }
-      ).addTo(map)
-    }
-    )
-    .catch((error) =>
-      console.error("Unable to fetch data:", error));
-}
-
-function displayStop(stop_data) {
-  L.marker([stop_data["stop_lat"], stop_data["stop_lon"]])
-    .addTo(network)
-    .bindTooltip(stop_data["stop_name"])
-    .on('click', onMarkerClick);
+  fetchStops().then(stops_data => displayStops(stops_data, unique_stop_ids));
 }
 
 function displayStops(stops_data, stop_ids) {
   let stops = stops_data["stops_association"]
     .filter((stop_data) => stop_ids.includes(stop_data["stop_id"]));
   stops.forEach((stop_data) => displayStop(stop_data));
+}
+
+function displayStop(stop) {
+  L.marker([stop["stop_lat"], stop["stop_lon"]])
+    .addTo(network)
+    .bindTooltip(stop["stop_name"])
+    .on('click', onMarkerClick);
 }
 
 function onMarkerClick(e) {
