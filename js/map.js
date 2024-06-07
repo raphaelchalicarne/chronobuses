@@ -52,7 +52,6 @@ function displayStopRoutes(stops_data, stop_search) {
     network.clearLayers();
     let stop = stops_data["stops_association"].find((stop) => stop["stop_name"] == stop_search);
     displayStop(stop, 'departure');
-    map.setView([stop["stop_lat"], stop["stop_lon"]], 5);
     let trip_ids = stop["trip_ids"].split(",");
     fetchTrips().then((trips_data) => displayTrips(trips_data, trip_ids));
     fetchTrips().then((trips_data) => displayConnectedStops(trips_data, trip_ids, stop["stop_id"]));
@@ -65,10 +64,12 @@ function displayTrips(trips_data, trip_ids) {
                 .find((trip) => trip["trip_id"] == trip_id)["shape"]
         )
         .filter(x => x);
-    L.polyline(
+    var trips_polyline = L.polyline(
         shapes,
         { color: '#73D700' }
     ).addTo(network);
+    var network_center = trips_polyline.getCenter();
+    map.setView([network_center.lat, network_center.lng], 5);
 }
 
 function displayConnectedStops(trips_data, trip_ids, departure_stop_id) {
