@@ -1,19 +1,5 @@
 import { map, network } from "./index.js";
 
-const departureMarker = L.AwesomeMarkers.icon({
-    icon: 'bus-simple',
-    prefix: 'fa',
-    extraClasses: 'fa-solid',
-    markerColor: 'green'
-});
-
-const arrivalMarker = L.AwesomeMarkers.icon({
-    icon: 'bus-simple',
-    prefix: 'fa',
-    extraClasses: 'fa-solid',
-    markerColor: 'red'
-});
-
 async function fetchStops() {
     try {
         const res = await fetch("./data/stops.json");
@@ -65,7 +51,7 @@ export function searchStop(event) {
 function displayStopRoutes(stops_data, stop_search) {
     network.clearLayers();
     let stop = stops_data["stops_association"].find((stop) => stop["stop_name"] == stop_search);
-    displayStop(stop, departureMarker);
+    displayStop(stop, 'departure');
     map.setView([stop["stop_lat"], stop["stop_lon"]], 5);
     let trip_ids = stop["trip_ids"].split(",");
     fetchTrips().then((trips_data) => displayTrips(trips_data, trip_ids));
@@ -99,11 +85,26 @@ function displayStops(stops_data, stop_ids, filtered_stop_id = null) {
     stops.forEach((stop_data) => displayStop(stop_data));
 }
 
-function displayStop(stop, icon = arrivalMarker) {
-    L.marker([stop["stop_lat"], stop["stop_lon"]], { icon: icon })
+function displayStop(stop, departure_arrival = 'arrival') {
+    L.marker(
+        [stop["stop_lat"], stop["stop_lon"]],
+        {
+            icon: stopIcon(departure_arrival),
+            zIndexOffset: departure_arrival == 'departure' ? 100 : undefined
+        }
+    )
         .addTo(network)
         .bindTooltip(stop["stop_name"])
         .on('click', onMarkerClick);
+}
+
+function stopIcon(departure_arrival) {
+    return L.AwesomeMarkers.icon({
+        icon: 'bus-simple',
+        prefix: 'fa',
+        extraClasses: 'fa-solid',
+        markerColor: departure_arrival == 'departure' ? 'green' : 'red'
+    });
 }
 
 function onMarkerClick(e) {
