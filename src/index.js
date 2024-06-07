@@ -49,11 +49,11 @@ function searchStop(event) {
 function displayStopRoutes(stops_data, stop_search) {
   network.clearLayers();
   let stop = stops_data["stops_association"].find((stop) => stop["stop_name"] == stop_search);
-  displayStop(stop);
+  displayStop(stop, icon = departureMarker);
   map.setView([stop["stop_lat"], stop["stop_lon"]], 5);
   let trip_ids = stop["trip_ids"].split(",");
   fetchTrips().then((trips_data) => displayTrips(trips_data, trip_ids));
-  fetchTrips().then((trips_data) => displayConnectedStops(trips_data, trip_ids));
+  fetchTrips().then((trips_data) => displayConnectedStops(trips_data, trip_ids, departure_stop_id = stop["stop_id"]));
 }
 
 function displayTrips(trips_data, trip_ids) {
@@ -69,22 +69,22 @@ function displayTrips(trips_data, trip_ids) {
   ).addTo(network);
 }
 
-function displayConnectedStops(trips_data, trip_ids) {
+function displayConnectedStops(trips_data, trip_ids, departure_stop_id) {
   let trips = trips_data["route_trips"]
     .filter((trip_data) => trip_ids.includes(trip_data["trip_id"]));
   let all_stop_ids = trips.map((trip_data) => trip_data["sorted_stops"]).join(',').split(',');
   let unique_stop_ids = Array.from(new Set(all_stop_ids));
-  fetchStops().then(stops_data => displayStops(stops_data, unique_stop_ids));
+  fetchStops().then(stops_data => displayStops(stops_data, unique_stop_ids, filtered_stop_id = departure_stop_id));
 }
 
-function displayStops(stops_data, stop_ids) {
+function displayStops(stops_data, stop_ids, filtered_stop_id = null) {
   let stops = stops_data["stops_association"]
-    .filter((stop_data) => stop_ids.includes(stop_data["stop_id"]));
+    .filter((stop_data) => stop_ids.includes(stop_data["stop_id"]) && stop_data["stop_id"] != filtered_stop_id);
   stops.forEach((stop_data) => displayStop(stop_data));
 }
 
-function displayStop(stop) {
-  L.marker([stop["stop_lat"], stop["stop_lon"]])
+function displayStop(stop, icon = arrivalMarker) {
+  L.marker([stop["stop_lat"], stop["stop_lon"]], { icon: icon })
     .addTo(network)
     .bindTooltip(stop["stop_name"])
     .on('click', onMarkerClick);
@@ -104,14 +104,19 @@ search_bar.addEventListener("change", searchStop);
 var network = new L.layerGroup();
 network.addTo(map);
 
-  // Creates a red marker with the bus-simple icon
-  var redMarker = L.AwesomeMarkers.icon({
-    icon: 'bus-simple',
-    prefix: 'fa',
-    markerColor: 'red'
-  });
-      
-  L.marker([51.941196,4.512291], {icon: redMarker}).addTo(map);
+const departureMarker = L.AwesomeMarkers.icon({
+  icon: 'bus-simple',
+  prefix: 'fa',
+  extraClasses: 'fa-solid',
+  markerColor: 'green'
+});
+
+const arrivalMarker = L.AwesomeMarkers.icon({
+  icon: 'bus-simple',
+  prefix: 'fa',
+  extraClasses: 'fa-solid',
+  markerColor: 'red'
+});
 
 L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
   maxZoom: 19,
