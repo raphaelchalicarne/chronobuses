@@ -104,6 +104,15 @@ search_bar.addEventListener("change", searchStop);
 var network = new L.layerGroup();
 network.addTo(map);
 
+  // Creates a red marker with the bus-simple icon
+  var redMarker = L.AwesomeMarkers.icon({
+    icon: 'bus-simple',
+    prefix: 'fa',
+    markerColor: 'red'
+  });
+      
+  L.marker([51.941196,4.512291], {icon: redMarker}).addTo(map);
+
 L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '<a href="https://carto.com/">&copy; CARTO</a> <a href="http://openmaptiles.org/">&copy; OpenMapTiles</a> <a href="http://www.openstreetmap.org/copyright">&copy; OpenStreetMap contributors</a>'
