@@ -1,1 +1,4 @@
 .vscode
+gtfs_blablacar_bus/
+gtfs_generic_eu_flixbus/
+.DS_Store

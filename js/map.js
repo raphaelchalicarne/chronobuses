@@ -2,7 +2,7 @@ import { map, network } from "./index.js";
 
 async function fetchStops() {
     try {
-        const res = await fetch("./data/stops.json");
+        const res = await fetch("./data/blablabus_stops.json");
         return jsonPayload(res);
     } catch (error) {
         return console.error("Unable to fetch data:", error);
@@ -11,7 +11,7 @@ async function fetchStops() {
 
 async function fetchTrips() {
     try {
-        const res = await fetch("./data/trips.json");
+        const res = await fetch("./data/blablabus_trips.json");
         return jsonPayload(res);
     } catch (error) {
         return console.error("Unable to fetch data:", error);
@@ -28,7 +28,7 @@ function jsonPayload(response) {
 export function populateStopsDatalist() {
     fetchStops().then((stops_data) => {
         var stops_select = document.getElementById("search_stop");
-        let stops = stops_data["stops_association"]
+        let stops = stops_data["blablabus_stops"]
             .sort((a, b) => a["stop_name"].localeCompare(b["stop_name"]));
         stops.forEach(stop => {
             let option = document.createElement('option');
@@ -50,9 +50,9 @@ export function searchStop(event) {
 
 function displayStopRoutes(stops_data, stop_search) {
     network.clearLayers();
-    let stop = stops_data["stops_association"].find((stop) => stop["stop_name"] == stop_search);
+    let stop = stops_data["blablabus_stops"].find((stop) => stop["stop_name"] == stop_search);
     displayStop(stop, 'departure');
-    let trip_ids = stop["trip_ids"].split(",");
+    let trip_ids = stop["trips_ids"].split(",");
     fetchTrips().then((trips_data) => displayTrips(trips_data, trip_ids));
     fetchTrips().then((trips_data) => displayConnectedStops(trips_data, trip_ids, stop["stop_id"]));
 }
@@ -60,12 +60,13 @@ function displayStopRoutes(stops_data, stop_search) {
 function displayTrips(trips_data, trip_ids) {
     let shapes = trip_ids
         .map(
-            (trip_id) => trips_data["route_trips"]
+            (trip_id) => trips_data["blablabus_trips"]
                 .find((trip) => trip["trip_id"] == trip_id)["shape"]
         )
         .filter(x => x);
+    let shapes_array = deserializeShapes(shapes);
     var trips_polyline = L.polyline(
-        shapes,
+        shapes_array,
         { color: '#73D700' }
     ).addTo(network);
     var network_center = trips_polyline.getCenter();
@@ -73,15 +74,15 @@ function displayTrips(trips_data, trip_ids) {
 }
 
 function displayConnectedStops(trips_data, trip_ids, departure_stop_id) {
-    let trips = trips_data["route_trips"]
+    let trips = trips_data["blablabus_trips"]
         .filter((trip_data) => trip_ids.includes(trip_data["trip_id"]));
-    let all_stop_ids = trips.map((trip_data) => trip_data["sorted_stops"]).join(',').split(',');
+    let all_stop_ids = trips.map((trip_data) => trip_data["stops_ids"]).join(',').split(',');
     let unique_stop_ids = Array.from(new Set(all_stop_ids));
     fetchStops().then(stops_data => displayStops(stops_data, unique_stop_ids, departure_stop_id));
 }
 
 function displayStops(stops_data, stop_ids, filtered_stop_id = null) {
-    let stops = stops_data["stops_association"]
+    let stops = stops_data["blablabus_stops"]
         .filter((stop_data) => stop_ids.includes(stop_data["stop_id"]) && stop_data["stop_id"] != filtered_stop_id);
     stops.forEach((stop_data) => displayStop(stop_data));
 }
@@ -97,6 +98,15 @@ function displayStop(stop, departure_arrival = 'arrival') {
         .addTo(network)
         .bindTooltip(stop["stop_name"])
         .on('click', onMarkerClick);
+}
+
+/**
+ * Deserialize an array of arrays when exported as JSON.
+ * @param {string[]} inputs
+ * @returns {number[][][]}
+ */
+function deserializeShapes(inputs) {
+    return inputs.map((input) => JSON.parse(input.replace(/{/g, '[').replace(/}/g, ']')));
 }
 
 function stopIcon(departure_arrival) {
