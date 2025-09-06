@@ -70,14 +70,14 @@ export function searchStop(event) {
     let selected_stop = stop_search.options[stop_search.selectedIndex];
     fetchStops()
         .then(stops_payload => mergeStops(stops_payload))
-        .then(stops_data => displayStopRoutes(stops_data, selected_stop.value));
+        .then(stops_data => displayStopRoutes(stops_data, selected_stop.id));
     event.preventDefault();
     stop_search.selectedIndex = -1;
 }
 
 function displayStopRoutes(stops_data, stop_search) {
     network.clearLayers();
-    let stop = stops_data["stops"].find((stop) => stop["stop_name"] == stop_search);
+    let stop = stops_data["stops"].find((stop) => stop["stop_id"] == stop_search);
     displayStop(stop, 'departure');
     let trip_ids = stop["trips_ids"].split(",");
     fetchTrips()
