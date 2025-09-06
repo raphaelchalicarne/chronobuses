@@ -134,6 +134,7 @@ function displayStop(stop, departure_arrival = 'arrival') {
         [stop["stop_lat"], stop["stop_lon"]],
         {
             icon: stopIcon(departure_arrival),
+            title: stop["stop_id"],
             zIndexOffset: departure_arrival == 'departure' ? 100 : undefined
         }
     )
@@ -161,8 +162,8 @@ function stopIcon(departure_arrival) {
 }
 
 function onMarkerClick(e) {
-    var stop_name = e.target.getTooltip().getContent();
+    var stop_id = e.target.options.title;
     fetchStops()
         .then(stops_payload => mergeStops(stops_payload))
-        .then(stops_data => displayStopRoutes(stops_data, stop_name));
+        .then(stops_data => displayStopRoutes(stops_data, stop_id));
 }
