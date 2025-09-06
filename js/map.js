@@ -65,9 +65,11 @@ function displayTrips(trips_data, trip_ids) {
         )
         .filter(x => x);
     let shapes_array = deserializeShapes(shapes);
+    // Make sure that we display each company's route color when we display both.
+    let route_color = "#" + trips_data["blablabus_trips"][0]["route_color"];
     var trips_polyline = L.polyline(
         shapes_array,
-        { color: '#73D700' }
+        { color: route_color }
     ).addTo(network);
     var network_center = trips_polyline.getCenter();
     map.setView([network_center.lat, network_center.lng], 5);
