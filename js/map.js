@@ -2,13 +2,13 @@ import { map, network } from "./index.js";
 
 async function fetchStops() {
     try {
-        const res_blablabus = await fetch("./data/blablabus_stops.json");
-        const res_flixbus = await fetch("./data/flixbus_stops.json");
-        Promise.all([res_blablabus, res_flixbus]).then(([res_blablabus, res_flixbus]) => {
-            let blablabus_payload = jsonPayload(res_blablabus);
-            let flixbus_payload = jsonPayload(res_flixbus);
-            return { "stops": blablabus_payload["blablabus_stops"].concat(flixbus_payload["flixbus_stops"]) };
-        })
+        const [res_blablabus, res_flixbus] = await Promise.all(
+            [
+                fetch("./data/blablabus_stops.json"),
+                fetch("./data/flixbus_stops.json"),
+            ]
+        ).then((responses) => Promise.all(responses.map(res => jsonPayload(res))));
+        return [res_blablabus, res_flixbus];
     } catch (error) {
         return console.error("Unable to fetch data:", error);
     }
@@ -30,10 +30,18 @@ function jsonPayload(response) {
     return response.json();
 }
 
+function mergeStops(stops_payload) {
+    let blablabus_stops_payload = stops_payload[0];
+    let flixbus_stops_payload = stops_payload[1];
+    let stops_data = { "stops": blablabus_stops_payload["blablabus_stops"].concat(flixbus_stops_payload["flixbus_stops"]) };
+    return stops_data;
+}
+
 export function populateStopsDatalist() {
-    fetchStops().then((stops_data) => {
+    fetchStops().then((stops_payload) => {
         var stops_select = document.getElementById("search_stop");
-        let stops = stops_data["blablabus_stops"]
+        let stops_data = mergeStops(stops_payload);
+        let stops = stops_data["stops"]
             .sort((a, b) => a["stop_name"].localeCompare(b["stop_name"]));
         stops.forEach(stop => {
             let option = document.createElement('option');
@@ -48,14 +56,16 @@ export function populateStopsDatalist() {
 export function searchStop(event) {
     let stop_search = document.getElementById("search_stop");
     let selected_stop = stop_search.options[stop_search.selectedIndex];
-    fetchStops().then(stops_data => displayStopRoutes(stops_data, selected_stop.value));
+    fetchStops()
+        .then(stops_payload => mergeStops(stops_payload))
+        .then(stops_data => displayStopRoutes(stops_data, selected_stop.value));
     event.preventDefault();
     stop_search.selectedIndex = -1;
 }
 
 function displayStopRoutes(stops_data, stop_search) {
     network.clearLayers();
-    let stop = stops_data["blablabus_stops"].find((stop) => stop["stop_name"] == stop_search);
+    let stop = stops_data["stops"].find((stop) => stop["stop_name"] == stop_search);
     displayStop(stop, 'departure');
     let trip_ids = stop["trips_ids"].split(",");
     fetchTrips().then((trips_data) => displayTrips(trips_data, trip_ids));
@@ -85,11 +95,13 @@ function displayConnectedStops(trips_data, trip_ids, departure_stop_id) {
         .filter((trip_data) => trip_ids.includes(trip_data["trip_id"]));
     let all_stop_ids = trips.map((trip_data) => trip_data["stops_ids"]).join(',').split(',');
     let unique_stop_ids = Array.from(new Set(all_stop_ids));
-    fetchStops().then(stops_data => displayStops(stops_data, unique_stop_ids, departure_stop_id));
+    fetchStops()
+        .then(stops_payload => mergeStops(stops_payload))
+        .then(stops_data => displayStops(stops_data, unique_stop_ids, departure_stop_id));
 }
 
 function displayStops(stops_data, stop_ids, filtered_stop_id = null) {
-    let stops = stops_data["blablabus_stops"]
+    let stops = stops_data["stops"]
         .filter((stop_data) => stop_ids.includes(stop_data["stop_id"]) && stop_data["stop_id"] != filtered_stop_id);
     stops.forEach((stop_data) => displayStop(stop_data));
 }
@@ -127,5 +139,7 @@ function stopIcon(departure_arrival) {
 
 function onMarkerClick(e) {
     var stop_name = e.target.getTooltip().getContent();
-    fetchStops().then(stops_data => displayStopRoutes(stops_data, stop_name));
+    fetchStops()
+        .then(stops_payload => mergeStops(stops_payload))
+        .then(stops_data => displayStopRoutes(stops_data, stop_name));
 }
