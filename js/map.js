@@ -2,13 +2,13 @@ import { map, network } from "./index.js";
 
 async function fetchStops() {
     try {
-        const [res_blablabus, res_flixbus] = await Promise.all(
+        const responses_stops = await Promise.all(
             [
                 fetch("./data/blablabus_stops.json"),
                 fetch("./data/flixbus_stops.json"),
             ]
         ).then((responses) => Promise.all(responses.map(res => jsonPayload(res))));
-        return [res_blablabus, res_flixbus];
+        return responses_stops;
     } catch (error) {
         return console.error("Unable to fetch data:", error);
     }
@@ -16,8 +16,13 @@ async function fetchStops() {
 
 async function fetchTrips() {
     try {
-        const res = await fetch("./data/blablabus_trips.json");
-        return jsonPayload(res);
+        const responses_trips = await Promise.all(
+            [
+                fetch("./data/blablabus_trips.json"),
+                fetch("./data/flixbus_trips.json"),
+            ]
+        ).then((responses) => Promise.all(responses.map(res => jsonPayload(res))));
+        return responses_trips;
     } catch (error) {
         return console.error("Unable to fetch data:", error);
     }
@@ -35,6 +40,13 @@ function mergeStops(stops_payload) {
     let flixbus_stops_payload = stops_payload[1];
     let stops_data = { "stops": blablabus_stops_payload["blablabus_stops"].concat(flixbus_stops_payload["flixbus_stops"]) };
     return stops_data;
+}
+
+function mergeTrips(trips_payload) {
+    let blablabus_trips_payload = trips_payload[0];
+    let flixbus_trips_payload = trips_payload[1];
+    let trips_data = { "trips": blablabus_trips_payload["blablabus_trips"].concat(flixbus_trips_payload["flixbus_trips"]) };
+    return trips_data;
 }
 
 export function populateStopsDatalist() {
@@ -68,30 +80,41 @@ function displayStopRoutes(stops_data, stop_search) {
     let stop = stops_data["stops"].find((stop) => stop["stop_name"] == stop_search);
     displayStop(stop, 'departure');
     let trip_ids = stop["trips_ids"].split(",");
-    fetchTrips().then((trips_data) => displayTrips(trips_data, trip_ids));
-    fetchTrips().then((trips_data) => displayConnectedStops(trips_data, trip_ids, stop["stop_id"]));
+    fetchTrips()
+        .then(trips_payload => mergeTrips(trips_payload))
+        .then((trips_data) => displayTrips(trips_data, trip_ids));
+    fetchTrips()
+        .then(trips_payload => mergeTrips(trips_payload))
+        .then((trips_data) => displayConnectedStops(trips_data, trip_ids, stop["stop_id"]));
 }
 
 function displayTrips(trips_data, trip_ids) {
-    let shapes = trip_ids
-        .map(
-            (trip_id) => trips_data["blablabus_trips"]
-                .find((trip) => trip["trip_id"] == trip_id)["shape"]
-        )
-        .filter(x => x);
-    let shapes_array = deserializeShapes(shapes);
-    // Make sure that we display each company's route color when we display both.
-    let route_color = "#" + trips_data["blablabus_trips"][0]["route_color"];
-    var trips_polyline = L.polyline(
-        shapes_array,
-        { color: route_color }
-    ).addTo(network);
-    var network_center = trips_polyline.getCenter();
-    map.setView([network_center.lat, network_center.lng], 5);
+    let trips_grouped_by_route_color = Object.groupBy(trips_data["trips"], d => d["route_color"]);
+    for (const route_color in trips_grouped_by_route_color) {
+        let shapes = trip_ids
+            .filter( // We only want to compute shapes of trips that share the same `route_color`. 
+                (trip_id) => trips_grouped_by_route_color[route_color]
+                    .map(d => d["trip_id"]).includes(trip_id)
+            )
+            .map(
+                (trip_id) => trips_grouped_by_route_color[route_color]
+                    .find((trip) => trip["trip_id"] == trip_id)["shape"]
+            )
+            .filter(x => x);
+        let shapes_array = deserializeShapes(shapes);
+        if (shapes_array.length > 0) {
+            var trips_polyline = L.polyline(
+                shapes_array,
+                { color: "#" + route_color }
+            ).addTo(network);
+            var network_center = trips_polyline.getCenter();
+            map.setView([network_center.lat, network_center.lng], 5);
+        }
+    }
 }
 
 function displayConnectedStops(trips_data, trip_ids, departure_stop_id) {
-    let trips = trips_data["blablabus_trips"]
+    let trips = trips_data["trips"]
         .filter((trip_data) => trip_ids.includes(trip_data["trip_id"]));
     let all_stop_ids = trips.map((trip_data) => trip_data["stops_ids"]).join(',').split(',');
     let unique_stop_ids = Array.from(new Set(all_stop_ids));
