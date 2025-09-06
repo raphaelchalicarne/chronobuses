@@ -2,8 +2,13 @@ import { map, network } from "./index.js";
 
 async function fetchStops() {
     try {
-        const res = await fetch("./data/blablabus_stops.json");
-        return jsonPayload(res);
+        const res_blablabus = await fetch("./data/blablabus_stops.json");
+        const res_flixbus = await fetch("./data/flixbus_stops.json");
+        Promise.all([res_blablabus, res_flixbus]).then(([res_blablabus, res_flixbus]) => {
+            let blablabus_payload = jsonPayload(res_blablabus);
+            let flixbus_payload = jsonPayload(res_flixbus);
+            return { "stops": blablabus_payload["blablabus_stops"].concat(flixbus_payload["flixbus_stops"]) };
+        })
     } catch (error) {
         return console.error("Unable to fetch data:", error);
     }
