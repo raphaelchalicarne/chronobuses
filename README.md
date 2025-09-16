@@ -73,6 +73,105 @@ transfer --|> stop
 
 Here are the scripts used to build the `stops.json` and `trips.json` files :
 
+### flixbus_trips
+The idea is to first make the table `unique_route_trips` by associating a unique trip to each route. This gives us a table with a `route_id`, `trip_id` and a `shape_id`.
+Then, we build the table `shape_sequences` by fetching the shape points in order for a given shape (and trip).
+Finally, we aggregate all the stops of a given trips in `stops_sequences`.
+
+The complete query is :
+```sql
+with unique_route_trips as (
+select
+	route_id,
+	trip_id,
+	shape_id
+from
+	(
+	select
+		routes.route_id,
+		trips.trip_id,
+		trips.shape_id,
+		row_number() over (partition by routes.route_id
+	order by
+		trips.trip_id) as trip_number
+	from
+		flixbus.trips
+	left join flixbus.routes on
+		routes.route_id = trips.route_id) as unique_trips
+where
+	trip_number = 1),
+shape_sequences as (
+select
+	unique_route_trips.trip_id,
+	array_agg( array[shapes.shape_pt_lat, shapes.shape_pt_lon] order by shapes.shape_pt_sequence ) as shape
+from
+	unique_route_trips
+left join flixbus.shapes on
+	unique_route_trips.shape_id = shapes.shape_id
+group by
+	unique_route_trips.trip_id),
+stops_sequences as (
+select
+	unique_route_trips.trip_id,
+	string_agg(stop_times.stop_id, ',' order by stop_times.stop_sequence) as stops_ids
+from
+	unique_route_trips
+left join flixbus.stop_times on
+	unique_route_trips.trip_id = stop_times.trip_id
+group by
+	unique_route_trips.trip_id)
+select
+	unique_route_trips.route_id,
+	unique_route_trips.trip_id,
+	routes.route_long_name,
+	routes.route_color,
+	stops_sequences.stops_ids,
+	shape_sequences.shape
+from
+	unique_route_trips
+left join flixbus.routes on
+	routes.route_id = unique_route_trips.route_id
+left join stops_sequences on
+	unique_route_trips.trip_id = stops_sequences.trip_id
+left join shape_sequences on
+	unique_route_trips.trip_id = shape_sequences.trip_id;
+```
+
+### flixbus_stops
+In `flixbus_stops`, we recompute the table `unique_route_trips` and aggregate all the trips_ids of each stop :
+```sql
+with unique_route_trips as (
+select
+	trip_id
+from
+	(
+	select
+		trips.trip_id,
+		row_number() over (partition by routes.route_id
+	order by
+			trips.trip_id) as trip_number
+	from
+		flixbus.trips
+	left join flixbus.routes on
+		routes.route_id = trips.route_id) as unique_trips
+where
+	trip_number = 1)
+select
+	stops.stop_id,
+	string_agg(cast(stop_times.trip_id as varchar), ',') trips_ids,
+	stops.stop_name,
+	stops.stop_lat,	
+	stops.stop_lon
+from
+	flixbus.stops
+left join flixbus.stop_times on
+	stops.stop_id = stop_times.stop_id
+inner join unique_route_trips on
+	stop_times.trip_id = unique_route_trips.trip_id
+group by
+	stops.stop_id;
+```
+
 ### BlaBlaBus
 
 [![License](https://img.shields.io/github/license/raphaelchalicarne/chronobuses.svg?style=flat)](license)
