@@ -172,7 +172,120 @@ group by
 	stops.stop_id;
 ```
 
-### BlaBlaBus
+## BlaBlaBus
+```mermaid
+---
+title: Blablabus API
+---
+classDiagram
+
+trip --|> route
+trip --|> service
+
+route --|> agency
+calendar --|> service
+calendar_date --|> service
+
+stop_time --|> trip
+stop_time --|> stop
+
+style stop fill:#33cc33
+style trip fill:#33cc33
+style route fill:#ff9900
+style stop_time fill:#ff9900
+```
+
+The data model of the BlaBlaBus GTFS is similar, but no `shapes.txt` file is given, and we have to compute the shapes by ourselves.
+
+### blablabus_trips
+Similarly to Flixbus, the complete SQL query to build `blablabus_trips` is 
+
+```sql
+with unique_route_trips as (
+select
+	route_id,
+	trip_id,
+	route_long_name,
+	route_color
+from
+	(
+	select
+		routes.route_id,
+		routes.route_long_name,
+		routes.route_color,
+		trips.trip_id,
+		row_number() over (partition by routes.route_id
+	order by
+		trips.trip_id) as trip_number
+	from
+		blablabus.trips
+	left join blablabus.routes on
+		routes.route_id = trips.route_id) as unique_trips
+where
+	trip_number = 1),
+stops_sequences as (
+select
+		unique_route_trips.trip_id,
+		string_agg(stop_times.stop_id, ',' order by stop_times.stop_sequence) stops_ids,
+		array_agg( array[stops.stop_lat, stops.stop_lon] order by stop_times.stop_sequence ) as shape
+from
+		unique_route_trips
+left join blablabus.stop_times on
+	unique_route_trips.trip_id = stop_times.trip_id
+left join blablabus.stops on
+	stop_times.stop_id = stops.stop_id
+group by
+	unique_route_trips.trip_id
+)
+select
+	unique_route_trips.route_id,
+	cast(unique_route_trips.trip_id as varchar),
+	unique_route_trips.route_long_name,
+	unique_route_trips.route_color,
+	stops_sequences.stops_ids,
+	stops_sequences.shape
+from
+	unique_route_trips
+left join stops_sequences on
+	unique_route_trips.trip_id = stops_sequences.trip_id;
+```
+
+### blablabus_stops
+Similarly to `flixbus_stops`, the complete SQL query to build `blablabus_stops` is 
+
+```sql
+with unique_route_trips as (
+select
+	trip_id
+from
+	(
+	select
+		trips.trip_id,
+		row_number() over (partition by routes.route_id
+	order by
+		trips.trip_id) as trip_number
+	from
+		blablabus.trips
+	left join blablabus.routes on
+		routes.route_id = trips.route_id) as unique_trips
+where
+	trip_number = 1)
+select
+	stops.stop_id,
+	string_agg(cast(stop_times.trip_id as varchar), ',') trips_ids,
+	stops.stop_name,
+	stops.stop_lat,
+	stops.stop_lon
+from
+	blablabus.stops
+left join blablabus.stop_times on
+	stops.stop_id = stop_times.stop_id
+inner join unique_route_trips on
+	stop_times.trip_id = unique_route_trips.trip_id
+group by
+		stops.stop_id;
+```
+
 
 [![License](https://img.shields.io/github/license/raphaelchalicarne/chronobuses.svg?style=flat)](license)
 [![Contact me](https://img.shields.io/badge/contact-email-turquoise)](mailto:raphael.chalicarne+chronobuses@outlook.com)
