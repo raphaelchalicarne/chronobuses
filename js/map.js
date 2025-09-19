@@ -56,12 +56,13 @@ export function populateStopsDatalist() {
         let stops = stops_data["stops"]
             .sort((a, b) => a["stop_name"].localeCompare(b["stop_name"]));
         stops.forEach(stop => {
-            let option = document.createElement('option');
+            let option = new Option(stop["stop_name"], stop["stop_name"]);
             option.id = stop["stop_id"];
-            option.value = stop["stop_name"];
-            option.label = stop["stop_name"];
             stops_select.appendChild(option);
         });
+        let placeholder_option = new Option('Select a stop', 'Select a stop', true, true);
+        placeholder_option.disabled = true;
+        stops_select.insertBefore(placeholder_option, stops_select.firstChild);
     });
 }
 
