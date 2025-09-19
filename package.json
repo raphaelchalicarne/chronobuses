@@ -10,7 +10,7 @@
     "type": "git",
     "url": "git+https://github.com/raphaelchalicarne/chronobuses.git"
   },
-  "license": "ISC",
+  "license": "GPL-3.0",
   "author": "Raphaël Chalicarne",
   "type": "commonjs",
   "main": "index.js",
