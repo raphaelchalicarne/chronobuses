@@ -6,6 +6,12 @@
 All direct long-distance buses connections from a given city.
 Inspired by **[direkt.bahn.guru](https://github.com/juliuste/direkt.bahn.guru)**
 
+## Install dependancies
+When setting up the project, run
+```
+npm install
+```
+
 ## GTFS
 [GTFS](https://gtfs.org) is a community-driven open standard for rider-facing transit information.
 
