@@ -1,3 +1,4 @@
+/*global L*/
 import { map, network } from "./index.js";
 
 async function fetchStops() {

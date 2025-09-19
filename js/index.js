@@ -1,3 +1,4 @@
+/*global L*/
 import { populateStopsDatalist, searchStop } from "./map.js";
 
 populateStopsDatalist();
